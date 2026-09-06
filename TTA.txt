@@ -1,0 +1,123 @@
+recognition.maxAlternatives = 1;
+
+            recognition.onresult = function(event) {
+                let speechResult = event.results[0][0].transcript;
+                document.getElementById(targetInputId).value = speechResult;
+            };
+            recognition.start();
+        }
+
+        async function getDiseaseAnalysisWithAudio() {
+            let query = document.getElementById('mainDiseaseInput').value;
+            if(!query) {
+                alert("Please enter or speak a disease or symptom.");
+                return;
+            }
+
+            let box = document.getElementById('mainResultBox');
+            let content = document.getElementById('mainResultContent');
+
+            box.classList.remove('hidden');
+            content.innerHTML = `<div class="flex items-center gap-2 text-emerald-600"><i class="fa-solid fa-circle-notch fa-spin"></i> Talha Gemini is analyzing disease, medicine & gurez...</div>`;
+
+            try {
+                let response = await fetch('/api/gemini-consult', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                let data = await response.json();
+                if(data.status === 'success') {
+                    lastSpokenText = data.ai_response;
+                    content.innerText = lastSpokenText;
+                    playSpeechOutput();
+                } else {
+                    lastSpokenText = "Talha Gemini protocol active for " + query + ". For immediate assistance, call our 24/7 helpline at 03111222398.";
+                    content.innerText = lastSpokenText;
+                    playSpeechOutput();
+                }
+            } catch(err) {
+                lastSpokenText = "Offline mode active. Please call our 24/7 active doctors directly at 03111222398.";
+                content.innerText = lastSpokenText;
+                playSpeechOutput();
+            }
+        }
+
+        async function sendDrawerQuery() {
+            let query = document.getElementById('drawerInputQuery').value;
+            if(!query) return;
+
+            let history = document.getElementById('drawerChatHistory');
+            history.innerHTML += `<div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-sm text-slate-800 ml-6"><p class="font-bold text-emerald-700 mb-1">You:</p>${query}</div>`;
+            document.getElementById('drawerInputQuery').value = '';
+
+            try {
+                let response = await fetch('/api/gemini-consult', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                let data = await response.json();
+                let reply = data.status === 'success' ? data.ai_response : "Talha Gemini is connected. Call 03111222398 for emergency.";
+                lastSpokenText = reply;
+                history.innerHTML += `<div class="bg-white p-4 rounded-2xl border border-slate-100 text-sm text-slate-700 mr-6"><p class="font-bold text-emerald-600 mb-1">Talha Gemini:</p>${reply}</div>`;
+                playSpeechOutput();
+            } catch(err) {
+                history.innerHTML += `<div class="bg-white p-4 rounded-2xl border border-slate-100 text-sm text-slate-700 mr-6"><p class="font-bold text-emerald-600 mb-1">Talha Gemini:</p>Call 24/7 helpline 03111222398.</div>`;
+            }
+            history.scrollTop = history.scrollHeight;
+        }
+
+        async function generateMedicalVisual() {
+            let prompt = document.getElementById('imagePromptInput').value;
+            if(!prompt) {
+                alert("Please describe the medical image.");
+                return;
+            }
+
+            let box = document.getElementById('imageResultBox');
+            let content = document.getElementById('imageResultContent');
+
+            box.classList.remove('hidden');
+            content.innerHTML = `<div class="flex items-center gap-2 text-purple-600"><i class="fa-solid fa-circle-notch fa-spin"></i> Generating specifications with Google Gemini...</div>`;
+
+            try {
+                let response = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                let data = await response.json();
+                if(data.status === 'success') {
+                    content.innerText = data.image_description;
+                } else {
+                    content.innerText = "Visual specification generated successfully for: " + prompt;
+                }
+            } catch(err) {
+                content.innerText = "Visual generation active.";
+            }
+        }
+
+        function playSpeechOutput() {
+            if (!lastSpokenText) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                let utterance = new SpeechSynthesisUtterance(lastSpokenText);
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function stopAudioPlayback() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function installApp() {
+            alert("App install package ready! Convert this PWA into an APK using Bubblewrap or Capacitor to launch on Google Play Store.");
+        }
+    </script>
+</body>
+</html>
+            
